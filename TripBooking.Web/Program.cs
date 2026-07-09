@@ -1,10 +1,16 @@
 using TripBooking.Web.Data;
+using TripBooking.Web.Repositories;
+using TripBooking.Web.Repositories.Interfaces;
+using TripBooking.Web.Services;
+using TripBooking.Web.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+builder.Services.AddScoped<IActivityService, ActivityService>();
 
 var app = builder.Build();
 

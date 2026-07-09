@@ -1,0 +1,29 @@
+﻿@model List<TripBooking.Web.Models.Entities.Activity>
+
+@{
+    ViewData["Title"] = "Activities";
+}
+
+<h1>Activities</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Unit Price</th>
+            <th>Active</th>
+        </tr>
+    </thead>    
+    <tbody>
+        @foreach (var activity in Model)
+        {
+            <tr>
+                <td>@activity.Name</td>
+                <td>@activity.Description</td>
+                <td>@activity.UnitPrice.ToString("C")</td>
+                <td>@(activity.IsActive ? "Yes" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>
