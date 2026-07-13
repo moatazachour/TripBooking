@@ -56,6 +56,64 @@ public class ActivityRepository : IActivityRepository
         return null;
     }
 
+    public async Task<int> InsertAsync(Activity activity)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = new SqlCommand("dbo.Activity_Insert", connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        command.Parameters.AddWithValue("@Name", activity.Name);
+        command.Parameters.AddWithValue("@Description", (object?)activity.Description ?? DBNull.Value);
+        command.Parameters.AddWithValue("@UnitPrice", activity.UnitPrice);
+        command.Parameters.AddWithValue("@IsActive", activity.IsActive);
+
+        // OUTPUT parameters need Direction set explicitly — ADO.NET has no way
+        // to know a parameter is an OUTPUT parameter just from its name.
+        var outputIdParam = new SqlParameter("@NewActivityId", SqlDbType.Int)
+        {
+            Direction = ParameterDirection.Output
+        };
+        command.Parameters.Add(outputIdParam);
+
+        await connection.OpenAsync();
+        await command.ExecuteNonQueryAsync();  // no rows returned, just the OUTPUT param
+
+        return (int)outputIdParam.Value;
+    }
+
+    public async Task UpdateAsync(Activity activity)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = new SqlCommand("dbo.Activity_Update", connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        command.Parameters.AddWithValue("@ActivityId", activity.ActivityId);
+        command.Parameters.AddWithValue("@Name", activity.Name);
+        command.Parameters.AddWithValue("@Description", (object?)activity.Description ?? DBNull.Value);
+        command.Parameters.AddWithValue("@UnitPrice", activity.UnitPrice);
+        command.Parameters.AddWithValue("@IsActive", activity.IsActive);
+
+        await connection.OpenAsync();
+        await command.ExecuteNonQueryAsync();
+    }
+
+    public async Task DeleteAsync(int activityId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = new SqlCommand("dbo.Activity_Delete", connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+        command.Parameters.AddWithValue("@ActivityId", activityId);
+
+        await connection.OpenAsync();
+        await command.ExecuteNonQueryAsync();
+    }
+
     // Centralizing the row->object mapping in one private method avoids
     // repeating the same column-index/ordinal lookups in every method,
     // and it's the one place to fix if a column is ever added or renamed.

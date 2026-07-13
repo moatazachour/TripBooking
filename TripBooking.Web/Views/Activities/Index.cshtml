@@ -1,10 +1,13 @@
-﻿@model List<TripBooking.Web.Models.Entities.Activity>
+﻿@using TripBooking.Web.Models.Entities
+@model List<Activity>
 
 @{
     ViewData["Title"] = "Activities";
 }
 
 <h1>Activities</h1>
+
+<p><a asp-action="Create" class="btn btn-primary">Create New</a></p>
 
 <table class="table">
     <thead>
@@ -13,8 +16,9 @@
             <th>Description</th>
             <th>Unit Price</th>
             <th>Active</th>
+            <th></th>
         </tr>
-    </thead>    
+    </thead>
     <tbody>
         @foreach (var activity in Model)
         {
@@ -23,6 +27,10 @@
                 <td>@activity.Description</td>
                 <td>@activity.UnitPrice.ToString("C")</td>
                 <td>@(activity.IsActive ? "Yes" : "No")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@activity.ActivityId" class="btn btn-sm btn-secondary">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@activity.ActivityId" class="btn btn-sm btn-danger">Delete</a>
+                </td>
             </tr>
         }
     </tbody>
