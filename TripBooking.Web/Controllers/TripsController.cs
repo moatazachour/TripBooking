@@ -1,13 +1,40 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TripBooking.Web.Models.Entities;
 using TripBooking.Web.Models.ViewModels;
+using TripBooking.Web.Repositories;
+using TripBooking.Web.Services.Interfaces;
 
 namespace TripBooking.Web.Controllers
 {
     public class TripsController : Controller
     {
-        public IActionResult Index()
+        private readonly ITripService _tripService;
+        private readonly ITripActivityService _tripActivityService;
+        private readonly IActivityService _activityService;
+
+        public TripsController(
+            ITripService tripService,
+            ITripActivityService tripActivityService,
+            IActivityService activityService)
         {
-            return View();
+            _tripService = tripService;
+            _tripActivityService = tripActivityService;
+            _activityService = activityService;
+        }
+
+
+        // GET /Trips
+        public async Task<IActionResult> Index()
+        {
+            var trips = await _tripService.GetAllTripsAsync();
+            return View(trips);
+        }
+
+        // GET /Trips/Create
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View(new TripFormViewModel());
         }
 
         [HttpPost]
@@ -32,9 +59,152 @@ namespace TripBooking.Web.Controllers
             {
                 return View(viewModel);
             }
-            // ... proceed with mapping and saving, same pattern as Chapter 4 ...
 
-            return View();
+            // NOTE: hardcoding TravelerId here is a placeholder — once Part 3
+            // (JWT auth) exists, this comes from the logged-in user's identity,
+            // never from a form field a user could tamper with. Flagged now so
+            // it isn't a surprise later; this is a deliberate, temporary stand-in.
+            var trip = new Trip
+            {
+                TravelerId = 3, // seeded Moataz traveler from our schema script
+                Destination = viewModel.Destination,
+                StartDate = viewModel.StartDate,
+                EndDate = viewModel.EndDate,
+                Budget = viewModel.Budget,
+                Status = "Draft"
+            };
+
+            var newTripId = await _tripService.CreateTripAsync(trip);
+
+            return RedirectToAction(nameof(Details), new { id = newTripId });
+        }
+
+        // GET /Trips/Details/5 — shows the Trip plus its booked Activities
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var trip = await _tripService.GetTripByIdAsync(id);
+            if (trip is null)
+            {
+                return NotFound();
+            }
+
+            var tripActivities = await _tripActivityService.GetActivitiesForTripAsync(id);
+            var availableActivities = await _activityService.GetAllActivitiesAsync();
+
+            var viewModel = new TripDetailsViewModel
+            {
+                Trip = trip,
+                BookedActivities = tripActivities,
+                AvailableActivities = availableActivities.Where(a => a.IsActive).ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        // POST /Trips/Details/5/AddActivity — booking a new Activity onto this Trip
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddActivity(int tripId, int activityId, int quantity)
+        {
+            try
+            {
+                await _tripActivityService.AddActivityToTripAsync(tripId, activityId, quantity);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // The "Activity not found or not active" translated exception
+                // from section 6.5, surfaced as a friendly message via TempData
+                // (a way to pass a one-time message across a redirect — briefly
+                // explained right after this code block).
+                TempData["ErrorMessage"] = ex.Message;
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["ErrorMessage"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Details), new { id = tripId });
+        }
+
+        // POST /Trips/Details/5/RemoveActivity
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveActivity(int tripActivityId, int tripId)
+        {
+            await _tripActivityService.RemoveActivityFromTripAsync(tripActivityId);
+            return RedirectToAction(nameof(Details), new { id = tripId });
+        }
+
+        // GET /Trips/Edit/5
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var trip = await _tripService.GetTripByIdAsync(id);
+            if (trip is null)
+            {
+                return NotFound();
+            }
+
+            var viewModel = new TripFormViewModel
+            {
+                TripId = trip.TripId,
+                Destination = trip.Destination,
+                StartDate = trip.StartDate,
+                EndDate = trip.EndDate,
+                Budget = trip.Budget,
+                RowVersion = trip.RowVersion  // carried through as a hidden field, section 6.10
+            };
+
+            return View(viewModel);
+        }
+
+        // POST /Trips/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, TripFormViewModel viewModel)
+        {
+            if (id != viewModel.TripId)
+            {
+                return BadRequest();
+            }
+
+            if (viewModel.EndDate < viewModel.StartDate)
+            {
+                ModelState.AddModelError(nameof(viewModel.EndDate), "End date must be on or after the start date.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(viewModel);
+            }
+
+            var trip = new Trip
+            {
+                TripId = viewModel.TripId,
+                TravelerId = 3, // see the note in Create — replaced properly in Part 3
+                Destination = viewModel.Destination,
+                StartDate = viewModel.StartDate,
+                EndDate = viewModel.EndDate,
+                Budget = viewModel.Budget,
+                Status = "Draft",
+                RowVersion = viewModel.RowVersion
+            };
+
+            try
+            {
+                await _tripService.UpdateTripAsync(trip);
+            }
+            catch (DbConcurrencyException ex)
+            {
+                // This is the payoff of the whole optimistic-concurrency story
+                // from 6.6: instead of a crash or a silent overwrite, the user
+                // gets a specific, honest, actionable message.
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(viewModel);
+            }
+
+            return RedirectToAction(nameof(Details), new { id = viewModel.TripId });
         }
     }
 }

@@ -11,6 +11,11 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
 builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<ITripRepository, TripRepository>();
+builder.Services.AddScoped<ITripService, TripService>();
+builder.Services.AddScoped<ITripActivityRepository, TripActivityRepository>();
+builder.Services.AddScoped<ITripActivityService, TripActivityService>();
+
 
 var app = builder.Build();
 
