@@ -36,7 +36,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Activities}/{action=Index}/{id?}")
+    pattern: "{controller=Trips}/{action=Create}/{id?}")
     .WithStaticAssets();
 
 

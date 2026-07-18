@@ -23,14 +23,12 @@ namespace TripBooking.Web.Controllers
         }
 
 
-        // GET /Trips
         public async Task<IActionResult> Index()
         {
             var trips = await _tripService.GetAllTripsAsync();
             return View(trips);
         }
 
-        // GET /Trips/Create
         [HttpGet]
         public IActionResult Create()
         {
@@ -79,7 +77,7 @@ namespace TripBooking.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = newTripId });
         }
 
-        // GET /Trips/Details/5 — shows the Trip plus its booked Activities
+
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
@@ -102,7 +100,6 @@ namespace TripBooking.Web.Controllers
             return View(viewModel);
         }
 
-        // POST /Trips/Details/5/AddActivity — booking a new Activity onto this Trip
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddActivity(int tripId, int activityId, int quantity)
@@ -127,7 +124,6 @@ namespace TripBooking.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = tripId });
         }
 
-        // POST /Trips/Details/5/RemoveActivity
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveActivity(int tripActivityId, int tripId)
@@ -136,7 +132,6 @@ namespace TripBooking.Web.Controllers
             return RedirectToAction(nameof(Details), new { id = tripId });
         }
 
-        // GET /Trips/Edit/5
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {

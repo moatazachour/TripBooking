@@ -1,0 +1,81 @@
+﻿@using TripBooking.Web.Models.ViewModels
+@model TripDetailsViewModel
+
+@{
+    ViewData["Title"] = "Trip Details";
+}
+
+<h1>@Model.Trip.Destination</h1>
+
+@if (TempData["ErrorMessage"] is not null)
+{
+    <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+}
+
+<dl class="row">
+    <dt class="col-sm-2">Dates</dt>
+    <dd class="col-sm-10">@Model.Trip.StartDate.ToString("d") – @Model.Trip.EndDate.ToString("d")</dd>
+
+    <dt class="col-sm-2">Budget</dt>
+    <dd class="col-sm-10">@Model.Trip.Budget.ToString("C")</dd>
+
+    <dt class="col-sm-2">Status</dt>
+    <dd class="col-sm-10">@Model.Trip.Status</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-id="@Model.Trip.TripId" class="btn btn-secondary">Edit Trip</a>
+
+<h2>Booked Activities</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Activity</th>
+            <th>Quantity</th>
+            <th>Price at Booking</th>
+            <th>Current Catalog Price</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ta in Model.BookedActivities)
+        {
+            <tr>
+                <td>@ta.ActivityName</td>
+                <td>@ta.Quantity</td>
+                <td>@ta.PriceAtBooking.ToString("C")</td>
+                <td>@ta.CurrentUnitPrice?.ToString("C")</td>
+                <td>
+                    <form asp-action="RemoveActivity" method="post" style="display:inline;">
+                        <input type="hidden" name="tripActivityId" value="@ta.TripActivityId" />
+                        <input type="hidden" name="tripId" value="@Model.Trip.TripId" />
+                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Add an Activity</h2>
+
+<form asp-action="AddActivity" method="post">
+    <input type="hidden" name="tripId" value="@Model.Trip.TripId" />
+
+    <div class="form-group">
+        <label for="activityId">Activity</label>
+        <select name="activityId" id="activityId" class="form-control">
+            @foreach (var activity in Model.AvailableActivities)
+            {
+                <option value="@activity.ActivityId">@activity.Name (@activity.UnitPrice.ToString("C"))</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="quantity">Quantity</label>
+        <input type="number" name="quantity" id="quantity" value="1" min="1" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Add to Trip</button>
+</form>

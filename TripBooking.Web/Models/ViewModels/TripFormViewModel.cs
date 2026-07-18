@@ -21,4 +21,9 @@ public class TripFormViewModel
     [Required]
     [Range(1, 1000000, ErrorMessage = "Budget must be greater than 0.")]
     public decimal Budget { get; set; }
+
+    // Carried silently through Edit's round trip as a hidden field — this is
+    // what powers the optimistic concurrency check from 6.6. Never rendered
+    // as a visible/editable field; the user never sees or touches it directly.
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 }
