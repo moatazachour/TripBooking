@@ -20,7 +20,7 @@ public class TripService : ITripService
 
     public async Task<Trip?> GetTripByIdAsync(int tripId) => await _tripRepository.GetByIdAsync(tripId);
 
-    public async Task<int> CreateTripAsync(Trip trip) => await _tripRepository.InsertAsync(trip);
+    public async Task<Trip> CreateTripAsync(Trip trip) => await _tripRepository.InsertAsync(trip);
 
     public async Task UpdateTripAsync(Trip trip) => await _tripRepository.UpdateAsync(trip);
 

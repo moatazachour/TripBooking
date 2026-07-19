@@ -78,7 +78,7 @@ public class TripRepository : ITripRepository
         return null;
     }
 
-    public async Task<int> InsertAsync(Trip trip)
+    public async Task<Trip> InsertAsync(Trip trip)
     {
         using var connection = _connectionFactory.CreateConnection();
         using var command = new SqlCommand("dbo.Trip_Insert", connection)
@@ -101,11 +101,23 @@ public class TripRepository : ITripRepository
         command.Parameters.Add(outputIdParam);
 
         await connection.OpenAsync();
-        await command.ExecuteNonQueryAsync();
 
-        return (int)outputIdParam.Value;
+        // Trip_Insert now ends with a SELECT of the freshly-inserted row
+        // (see the updated stored procedure), so we read it here via
+        // ExecuteReaderAsync instead of ExecuteNonQueryAsync. This hands
+        // the caller back a Trip whose RowVersion is real and current —
+        // no separate GetByIdAsync round trip needed just to make the
+        // returned Trip usable in a later optimistic-concurrency UPDATE.
+        using (var reader = await command.ExecuteReaderAsync())
+        {
+            await reader.ReadAsync();
+            trip.TripId = reader.GetInt32(reader.GetOrdinal("TripId"));
+            trip.CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc"));
+            trip.RowVersion = (byte[])reader["RowVersion"];
+        }
+
+        return trip;
     }
-
     public async Task UpdateAsync(Trip trip)
     {
         using var connection = _connectionFactory.CreateConnection();
@@ -223,6 +235,7 @@ public class TripRepository : ITripRepository
 
     private static Trip MapTrip(SqlDataReader reader, bool includeTravelerName)
     {
+        // string? doc = reader.GetString(reader.GetOrdinal("DocumentPath"));
         var trip = new Trip
         {
             TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
@@ -233,7 +246,10 @@ public class TripRepository : ITripRepository
             Budget = reader.GetDecimal(reader.GetOrdinal("Budget")),
             Status = reader.GetString(reader.GetOrdinal("Status")),
             CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc")),
-            RowVersion = (byte[])reader["RowVersion"]
+            RowVersion = (byte[])reader["RowVersion"],
+            DocumentPath = reader.IsDBNull(reader.GetOrdinal("DocumentPath"))
+                ? null
+                : reader.GetString(reader.GetOrdinal("DocumentPath"))
         };
 
         if (includeTravelerName)

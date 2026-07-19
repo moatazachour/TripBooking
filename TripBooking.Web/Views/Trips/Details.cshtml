@@ -23,6 +23,12 @@
     <dd class="col-sm-10">@Model.Trip.Status</dd>
 </dl>
 
+@* WHY THIS LINK WON'T APPEAR ON THE SCREEN EVEN THOUGH THE IF RETURN TRUEE*@
+@if (!string.IsNullOrEmpty(Model.Trip.DocumentPath))
+{
+    <a asp-action="DownloadDocument" asp-route-id="@Model.Trip.TripId" class="btn btn-secondary">Download Document</a>
+}
+
 <a asp-action="Edit" asp-route-id="@Model.Trip.TripId" class="btn btn-secondary">Edit Trip</a>
 
 <h2>Booked Activities</h2>

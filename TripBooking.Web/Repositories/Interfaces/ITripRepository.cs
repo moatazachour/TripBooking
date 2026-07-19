@@ -7,7 +7,7 @@ public interface ITripRepository
     Task<List<Trip>> GetAllAsync();
     Task<List<Trip>> GetByTravelerIdAsync(int travelerId);
     Task<Trip?> GetByIdAsync(int tripId);
-    Task<int> InsertAsync(Trip trip);
+    Task<Trip> InsertAsync(Trip trip);
     Task UpdateAsync(Trip trip);
     Task DeleteAsync(int tripId);
     Task<(List<Trip> Trips, int TotalCount)> SearchAsync(

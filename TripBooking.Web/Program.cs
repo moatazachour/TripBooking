@@ -9,12 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
-builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+
 builder.Services.AddScoped<IActivityService, ActivityService>();
-builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<ITripService, TripService>();
-builder.Services.AddScoped<ITripActivityRepository, TripActivityRepository>();
 builder.Services.AddScoped<ITripActivityService, TripActivityService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+
+builder.Services.AddScoped<ITripRepository, TripRepository>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+builder.Services.AddScoped<ITripActivityRepository, TripActivityRepository>();
 
 
 var app = builder.Build();

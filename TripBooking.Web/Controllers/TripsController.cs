@@ -2,6 +2,7 @@
 using TripBooking.Web.Models.Entities;
 using TripBooking.Web.Models.ViewModels;
 using TripBooking.Web.Repositories;
+using TripBooking.Web.Services;
 using TripBooking.Web.Services.Interfaces;
 
 namespace TripBooking.Web.Controllers
@@ -11,15 +12,18 @@ namespace TripBooking.Web.Controllers
         private readonly ITripService _tripService;
         private readonly ITripActivityService _tripActivityService;
         private readonly IActivityService _activityService;
+        private readonly IFileStorageService _fileStorageService;
 
         public TripsController(
             ITripService tripService,
             ITripActivityService tripActivityService,
-            IActivityService activityService)
+            IActivityService activityService,
+            IFileStorageService fileStorageService)
         {
             _tripService = tripService;
             _tripActivityService = tripActivityService;
             _activityService = activityService;
+            _fileStorageService = fileStorageService;
         }
 
 
@@ -46,6 +50,8 @@ namespace TripBooking.Web.Controllers
 
             return View(searchViewModel);
         }
+        
+        
         [HttpGet]
         public IActionResult Create()
         {
@@ -54,7 +60,7 @@ namespace TripBooking.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(TripFormViewModel viewModel)
+        public async Task<IActionResult> Create(TripFormViewModel viewModel, IFormFile? documentFile)
         {
             // Cross-field rule: Data Annotations can't express "EndDate >= StartDate"
             // because it depends on two properties at once. We check it explicitly
@@ -89,11 +95,56 @@ namespace TripBooking.Web.Controllers
                 Status = "Draft"
             };
 
-            var newTripId = await _tripService.CreateTripAsync(trip);
+            var createdTrip = await _tripService.CreateTripAsync(trip);
 
-            return RedirectToAction(nameof(Details), new { id = newTripId });
+            // The file needs the new TripId (for naming), so it's saved AFTER the
+            // Trip itself already exists — order matters here.
+            if (documentFile is not null && documentFile.Length > 0)
+            {
+                try
+                {
+                    var storedFileName = await _fileStorageService.SaveTripDocumentAsync(createdTrip.TripId, documentFile);
+
+                    // createdTrip came straight back from Trip_Insert's own SELECT
+                    // (see Chapter 6's updated Repository), so createdTrip.RowVersion
+                    // is the REAL value SQL Server just assigned — not a C# default
+                    // empty array. That's exactly what UpdateAsync's optimistic-
+                    // concurrency WHERE RowVersion = @RowVersion check needs to
+                    // succeed on the very first try, right after Insert.
+                    createdTrip.DocumentPath = storedFileName;
+                    await _tripService.UpdateTripAsync(createdTrip);
+                }
+                catch (ArgumentException ex)
+                {
+                    TempData["ErrorMessage"] = $"Trip was created, but the file upload failed: {ex.Message}";
+                }
+            }
+
+            return RedirectToAction(nameof(Details), new { id = createdTrip.TripId });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> DownloadDocument(int id)
+        {
+            var trip = await _tripService.GetTripByIdAsync(id);
+            if (trip?.DocumentPath is null)
+            {
+                return NotFound();
+            }
+
+            var document = await _fileStorageService.GetTripDocumentAsync(trip.DocumentPath);
+            if (document is null)
+            {
+                return NotFound();
+            }
+
+            // File(...) is another IActionResult, alongside View(), Redirect(), and
+            // NotFound() from earlier chapters — this one streams raw bytes back
+            // with a specific Content-Type, which is what makes the browser either
+            // display it inline (PDFs/images often do) or offer a download,
+            // depending on the browser and the Content-Disposition behavior.
+            return File(document.Value.Content, document.Value.ContentType, document.Value.FileName);
+        }
 
         [HttpGet]
         public async Task<IActionResult> Details(int id)
@@ -200,7 +251,8 @@ namespace TripBooking.Web.Controllers
                 EndDate = viewModel.EndDate,
                 Budget = viewModel.Budget,
                 Status = "Draft",
-                RowVersion = viewModel.RowVersion
+                RowVersion = viewModel.RowVersion,
+                DocumentPath = viewModel.DocumentPath
             };
 
             try

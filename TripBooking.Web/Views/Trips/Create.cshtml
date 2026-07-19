@@ -7,7 +7,7 @@
 
 <h1>Create Trip</h1>
 
-<form asp-action="Create" method="post">
+<form asp-action="Create" method="post" enctype="multipart/form-data">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
     <div class="form-group">
@@ -32,6 +32,11 @@
         <label asp-for="Budget"></label>
         <input asp-for="Budget" class="form-control" />
         <span asp-validation-for="Budget" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label for="documentFile">Trip Document (optional, PDF/JPG/PNG, max 5MB)</label>
+        <input type="file" name="documentFile" id="documentFile" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
     </div>
 
     <button type="submit" class="btn btn-primary">Save</button>
