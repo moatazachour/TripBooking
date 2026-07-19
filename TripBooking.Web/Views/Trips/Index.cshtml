@@ -1,0 +1,111 @@
+﻿@using TripBooking.Web.Controllers
+@using TripBooking.Web.Models.ViewModels
+@model TripSearchViewModel
+
+@{
+    ViewData["Title"] = "Trips";
+
+    // A tiny local helper function, written right here in the Razor file.
+    // Its job: build the query string for a sortable column header link,
+    // flipping ASC/DESC if you click the SAME column you're already sorted
+    // by, or defaulting to ASC if you click a DIFFERENT column. Keeping
+    // this logic here (rather than duplicating the if/else six times below,
+    // once per column) is exactly the same "don't repeat yourself" instinct
+    // as the TotalPages property back in the ViewModel.
+    string? SortLink(string column) // I added ? to prevent the warning
+    {
+        var direction = (Model.SortColumn == column && Model.SortDirection == "ASC") ? "DESC" : "ASC";
+        return Url.Action(nameof(TripsController.Index), new
+        {
+            destinationFilter = Model.DestinationFilter,
+            statusFilter = Model.StatusFilter,
+            sortColumn = column,
+            sortDirection = direction,
+            pageNumber = 1,  // changing sort order always resets back to page 1 — makes sense: your
+                             // old "page 3" position is meaningless once the order has changed
+            pageSize = Model.PageSize
+        });
+    }
+}
+
+<h1>Trips</h1>
+
+<form method="get" asp-action="Index" class="form-inline mb-3">
+    <input type="text" name="destinationFilter" value="@Model.DestinationFilter"
+           placeholder="Search destination..." class="form-control mr-2" />
+
+    <select name="statusFilter" class="form-control mr-2">
+        <option value="">All statuses</option>
+        @foreach (var status in new[] { "Draft", "Confirmed", "Cancelled", "Completed" })
+        {
+            <option value="@status" selected="@(Model.StatusFilter == status)">@status</option>
+        }
+    </select>
+
+    <button type="submit" class="btn btn-primary">Search</button>
+    <a asp-action="Index" class="btn btn-secondary">Clear</a>
+</form>
+
+<p>@Model.TotalCount trip(s) found.</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th><a href="@SortLink("Destination")">Destination</a></th>
+            <th><a href="@SortLink("StartDate")">Start Date</a></th>
+            <th>End Date</th>
+            <th><a href="@SortLink("Budget")">Budget</a></th>
+            <th>Status</th>
+            <th>Traveler</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var trip in Model.Results)
+        {
+            <tr>
+                <td>@trip.Destination</td>
+                <td>@trip.StartDate.ToString("d")</td>
+                <td>@trip.EndDate.ToString("d")</td>
+                <td>@trip.Budget.ToString("C")</td>
+                <td>@trip.Status</td>
+                <td>@trip.TravelerFirstName @trip.TravelerLastName</td>
+                <td><a asp-action="Details" asp-route-id="@trip.TripId" class="btn btn-sm btn-secondary">View</a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<nav>
+    @if (Model.HasPreviousPage)
+    {
+        <a class="btn btn-secondary" asp-action="Index" asp-all-route-data="@GetRouteData(Model.PageNumber - 1)">Previous</a>
+    }
+
+    <span>Page @Model.PageNumber of @Model.TotalPages</span>
+
+    @if (Model.HasNextPage)
+    {
+        <a class="btn btn-secondary" asp-action="Index" asp-all-route-data="@GetRouteData(Model.PageNumber + 1)">Next</a>
+    }
+</nav>
+
+@functions {
+    // @functions lets a View define a full C# method (not just an inline
+    // expression like @(...)) that the rest of the Razor markup above can
+    // call. Here it builds a Dictionary<string,string> of every current
+    // search/sort value plus a new page number, for asp-all-route-data
+    // (explained right below) to turn into query string parameters.
+    Dictionary<string, string> GetRouteData(int pageNumber)
+    {
+        return new Dictionary<string, string>
+        {
+            ["destinationFilter"] = Model.DestinationFilter ?? "",
+            ["statusFilter"] = Model.StatusFilter ?? "",
+            ["sortColumn"] = Model.SortColumn,
+            ["sortDirection"] = Model.SortDirection,
+            ["pageNumber"] = pageNumber.ToString(),
+            ["pageSize"] = Model.PageSize.ToString()
+        };
+    }
+}

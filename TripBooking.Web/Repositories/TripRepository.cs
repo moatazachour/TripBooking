@@ -153,6 +153,74 @@ public class TripRepository : ITripRepository
         await command.ExecuteNonQueryAsync();
     }
 
+    public async Task<(List<Trip> Trips, int TotalCount)> SearchAsync(
+        string? destinationFilter,
+        string? statusFilter,
+        string sortColumn,
+        string sortDirection,
+        int pageNumber,
+        int pageSize)
+    {
+        var trips = new List<Trip>();
+
+        using var connection = _connectionFactory.CreateConnection();
+        using var command = new SqlCommand("dbo.Trip_Search", connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        // Here's the trick behind "optional" filters: if the user didn't type
+        // anything into the Destination box, we pass DBNull.Value, and the
+        // stored procedure's own "@DestinationFilter IS NULL OR ..." logic
+        // (written back in Chapter 2) takes care of skipping that filter
+        // entirely. The C# side doesn't need any "if filter is empty, build a
+        // different query" branching at all — the T-SQL already handles it.
+        command.Parameters.AddWithValue("@DestinationFilter", (object?)destinationFilter ?? DBNull.Value);
+        command.Parameters.AddWithValue("@StatusFilter", (object?)statusFilter ?? DBNull.Value);
+        command.Parameters.AddWithValue("@SortColumn", sortColumn);
+        command.Parameters.AddWithValue("@SortDirection", sortDirection);
+        command.Parameters.AddWithValue("@PageNumber", pageNumber);
+        command.Parameters.AddWithValue("@PageSize", pageSize);
+
+        var totalCountParam = new SqlParameter("@TotalCount", SqlDbType.Int)
+        {
+            Direction = ParameterDirection.Output
+        };
+        command.Parameters.Add(totalCountParam);
+
+        await connection.OpenAsync();
+        using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            trips.Add(new Trip
+            {
+                TripId = reader.GetInt32(reader.GetOrdinal("TripId")),
+                TravelerId = reader.GetInt32(reader.GetOrdinal("TravelerId")),
+                Destination = reader.GetString(reader.GetOrdinal("Destination")),
+                StartDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("StartDate"))),
+                EndDate = DateOnly.FromDateTime(reader.GetDateTime(reader.GetOrdinal("EndDate"))),
+                Budget = reader.GetDecimal(reader.GetOrdinal("Budget")),
+                Status = reader.GetString(reader.GetOrdinal("Status")),
+                CreatedAtUtc = reader.GetDateTime(reader.GetOrdinal("CreatedAtUtc")),
+                TravelerFirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                TravelerLastName = reader.GetString(reader.GetOrdinal("LastName"))
+            });
+        }
+
+        // IMPORTANT, and a genuinely common bug if missed: OUTPUT parameters
+        // are only guaranteed to have their final value AFTER the SqlDataReader
+        // has been fully read and closed. Reading totalCountParam.Value too
+        // early (e.g. right after ExecuteReaderAsync, before the while loop)
+        // can give you a stale or default value. The "using" on reader above
+        // closes it as soon as we leave this scope, but we read the OUTPUT
+        // value here, after the while loop has drained every row, to be safe.
+        await reader.CloseAsync(); // I added this line
+        var totalCount = (int)totalCountParam.Value;
+
+        return (trips, totalCount);
+    }
+
     private static Trip MapTrip(SqlDataReader reader, bool includeTravelerName)
     {
         var trip = new Trip

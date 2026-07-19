@@ -23,12 +23,29 @@ namespace TripBooking.Web.Controllers
         }
 
 
-        public async Task<IActionResult> Index()
+        // GET /Trips?destinationFilter=Djerba&sortColumn=Budget&sortDirection=ASC&pageNumber=1
+        [HttpGet]
+        public async Task<IActionResult> Index(TripSearchViewModel searchViewModel)
         {
-            var trips = await _tripService.GetAllTripsAsync();
-            return View(trips);
-        }
+            // MVC's model binder already populated searchViewModel's filter/sort/paging
+            // properties directly from the query string, using the same name-matching
+            // rules from Chapter 4 (query string key "destinationFilter" -> property
+            // "DestinationFilter", case-insensitively). No manual Request.Query[...]
+            // reading required anywhere.
 
+            var (trips, totalCount) = await _tripService.SearchTripsAsync(
+                searchViewModel.DestinationFilter,
+                searchViewModel.StatusFilter,
+                searchViewModel.SortColumn,
+                searchViewModel.SortDirection,
+                searchViewModel.PageNumber,
+                searchViewModel.PageSize);
+
+            searchViewModel.Results = trips;
+            searchViewModel.TotalCount = totalCount;
+
+            return View(searchViewModel);
+        }
         [HttpGet]
         public IActionResult Create()
         {

@@ -10,4 +10,11 @@ public interface ITripRepository
     Task<int> InsertAsync(Trip trip);
     Task UpdateAsync(Trip trip);
     Task DeleteAsync(int tripId);
+    Task<(List<Trip> Trips, int TotalCount)> SearchAsync(
+    string? destinationFilter,
+    string? statusFilter,
+    string sortColumn,
+    string sortDirection,
+    int pageNumber,
+    int pageSize);
 }
