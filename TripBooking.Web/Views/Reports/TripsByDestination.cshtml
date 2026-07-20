@@ -1,0 +1,42 @@
+﻿@using TripBooking.Web.Models.ViewModels
+@model List<DestinationReportRow>
+
+@{
+    ViewData["Title"] = "Trips by Destination";
+    var selectedYear = ViewData["SelectedYear"] as int?;
+}
+
+<h1>Trips by Destination</h1>
+
+<form method="get" asp-action="TripsByDestination" class="form-inline mb-3">
+    <label for="year" class="mr-2">Year:</label>
+    <select name="year" id="year" class="form-control mr-2" onchange="this.form.submit()">
+        <option value="">All years</option>
+        @for (int y = DateTime.Today.Year + 1; y >= DateTime.Today.Year - 2; y--)
+        {
+            <option value="@y" selected="@(selectedYear == y)">@y</option>
+        }
+    </select>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Destination</th>
+            <th>Trip Count</th>
+            <th>Total Budget</th>
+            <th>Average Budget</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model)
+        {
+            <tr>
+                <td>@row.Destination</td>
+                <td>@row.TripCount</td>
+                <td>@row.TotalBudget.ToString("C")</td>
+                <td>@row.AverageBudget.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+</table>

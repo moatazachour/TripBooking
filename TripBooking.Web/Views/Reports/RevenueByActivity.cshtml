@@ -1,0 +1,40 @@
+﻿@using TripBooking.Web.Models.ViewModels
+@model List<ActivityRevenueReportRow>
+
+@{
+    ViewData["Title"] = "Revenue by Activity";
+}
+
+<h1>Revenue by Activity</h1>
+
+<p><a asp-action="ExportRevenueByActivityCsv" class="btn btn-secondary">Export to CSV</a></p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Activity</th>
+            <th>Total Revenue</th>
+            <th>Units Booked</th>
+            <th>Trips</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model)
+        {
+            <tr>
+                <td>@row.Name</td>
+                <td>@row.TotalRevenue.ToString("C")</td>
+                <td>@row.TotalUnitsBooked</td>
+                <td>@row.TripCount</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <th>Total</th>
+            <th>@Model.Sum(r => r.TotalRevenue).ToString("C")</th>
+            <th>@Model.Sum(r => r.TotalUnitsBooked)</th>
+            <th>@Model.Sum(r => r.TripCount)</th>
+        </tr>
+    </tfoot>
+</table>

@@ -14,10 +14,12 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<ITripService, TripService>();
 builder.Services.AddScoped<ITripActivityService, TripActivityService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
 builder.Services.AddScoped<ITripActivityRepository, TripActivityRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
 
 
 var app = builder.Build();
