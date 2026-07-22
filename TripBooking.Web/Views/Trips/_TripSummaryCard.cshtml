@@ -1,0 +1,13 @@
+﻿@using TripBooking.Web.Models.Entities
+@model Trip
+
+<div class="card mb-2">
+    <div class="card-body">
+        <h5 class="card-title">@Model.Destination</h5>
+        <p class="card-text">
+            @Model.StartDate.ToString("d") – @Model.EndDate.ToString("d")<br />
+            Budget: @Model.Budget.ToString("C")<br />
+            Status: @Model.Status
+        </p>
+    </div>
+</div>

@@ -1,0 +1,10 @@
+﻿@using TripBooking.Web.Models.Entities
+@model List<Trip>
+
+<div class="dropdown-menu-inner">
+    <h6>Recent Trips</h6>
+    @foreach (var trip in Model)
+    {
+        <div><a asp-controller="Trips" asp-action="Details" asp-route-id="@trip.TripId">@trip.Destination</a></div>
+    }
+</div>

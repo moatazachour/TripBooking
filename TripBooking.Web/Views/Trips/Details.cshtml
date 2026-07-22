@@ -5,25 +5,13 @@
     ViewData["Title"] = "Trip Details";
 }
 
-<h1>@Model.Trip.Destination</h1>
-
 @if (TempData["ErrorMessage"] is not null)
 {
     <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
 }
 
-<dl class="row">
-    <dt class="col-sm-2">Dates</dt>
-    <dd class="col-sm-10">@Model.Trip.StartDate.ToString("d") – @Model.Trip.EndDate.ToString("d")</dd>
+<partial name="_TripSummaryCard" model="Model.Trip" />
 
-    <dt class="col-sm-2">Budget</dt>
-    <dd class="col-sm-10">@Model.Trip.Budget.ToString("C")</dd>
-
-    <dt class="col-sm-2">Status</dt>
-    <dd class="col-sm-10">@Model.Trip.Status</dd>
-</dl>
-
-@* WHY THIS LINK WON'T APPEAR ON THE SCREEN EVEN THOUGH THE IF RETURN TRUEE*@
 @if (!string.IsNullOrEmpty(Model.Trip.DocumentPath))
 {
     <a asp-action="DownloadDocument" asp-route-id="@Model.Trip.TripId" class="btn btn-secondary">Download Document</a>

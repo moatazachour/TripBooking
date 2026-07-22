@@ -22,6 +22,6 @@
 
 <form asp-action="Delete" method="post">
     <input type="hidden" asp-for="ActivityId" />
-    <button type="submit" class="btn btn-danger">Delete</button>
+    <confirm-button confirm-message="Delete this activity permanently?" class="btn btn-danger">Delete</confirm-button>
     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>
